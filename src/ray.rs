@@ -16,8 +16,11 @@ impl Ray {
     return (1.0-a)*color(1.0, 1.0, 1.0) + a*color(0.5, 0.7, 1.0);
     */
     pub fn color(&self) -> Vector<3, f32> {
-        if self.hits_sphere(Vector([0.0, 0.0, -1.0]), 0.5) {
-            return Vector([1.0, 0.0, 0.0]);
+        let sphere_intersection = self.get_sphere_hit_distance(Vector([0.0, 0.0, -1.0]), 0.5);
+
+        if sphere_intersection > 0.0 {
+            let normal = (self.at(sphere_intersection) - Vector([0.0, 0.0, -1.0])).normalize();
+            return Vector([normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0]) * 0.5;
         }
 
         let unit_direction = self.direction.normalize();
@@ -26,7 +29,7 @@ impl Ray {
         Vector([1.0, 1.0, 1.0]) * (1.0 - a) + Vector([0.5, 0.7, 1.0]) * a
     }
 
-    fn hits_sphere(&self, center: Vector<3, f32>, radius: f32) -> bool {
+    fn get_sphere_hit_distance(&self, center: Vector<3, f32>, radius: f32) -> f32 {
         let sphere_direction = self.start.clone() - center;
 
         // solve using quadratic formula
@@ -36,6 +39,10 @@ impl Ray {
 
         let discriminant = b * b - 4.0 * a * c;
 
-        discriminant > 0.0
+        if discriminant < 0.0 {
+            -1.0
+        } else {
+            (-b - discriminant.sqrt()) / (2.0 * a)
+        }
     }
 }
