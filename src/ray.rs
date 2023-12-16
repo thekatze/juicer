@@ -10,15 +10,8 @@ impl Ray {
         self.start.clone() + self.direction.clone() * t
     }
 
-    /*
-    vec3 unit_direction = unit_vector(r.direction());
-    auto a = 0.5*(unit_direction.y() + 1.0);
-    return (1.0-a)*color(1.0, 1.0, 1.0) + a*color(0.5, 0.7, 1.0);
-    */
     pub fn color(&self) -> Vector<3, f32> {
-        let sphere_intersection = self.get_sphere_hit_distance(Vector([0.0, 0.0, -1.0]), 0.5);
-
-        if sphere_intersection > 0.0 {
+        if let Some(sphere_intersection) = self.get_sphere_hit_distance(Vector([0.0, 0.0, -1.0]), 0.5) {
             let normal = (self.at(sphere_intersection) - Vector([0.0, 0.0, -1.0])).normalize();
             return Vector([normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0]) * 0.5;
         }
@@ -29,20 +22,20 @@ impl Ray {
         Vector([1.0, 1.0, 1.0]) * (1.0 - a) + Vector([0.5, 0.7, 1.0]) * a
     }
 
-    fn get_sphere_hit_distance(&self, center: Vector<3, f32>, radius: f32) -> f32 {
+    fn get_sphere_hit_distance(&self, center: Vector<3, f32>, radius: f32) -> Option<f32> {
         let sphere_direction = self.start.clone() - center;
 
         // solve using quadratic formula
-        let a = self.direction.dot(&self.direction);
-        let b = 2.0 * sphere_direction.dot(&self.direction);
-        let c = sphere_direction.dot(&sphere_direction) - radius * radius;
+        let a = self.direction.len_squared();
+        let half_b = sphere_direction.dot(&self.direction);
+        let c = sphere_direction.len_squared() - radius * radius;
 
-        let discriminant = b * b - 4.0 * a * c;
+        let discriminant = half_b * half_b - a * c;
 
         if discriminant < 0.0 {
-            -1.0
+            None
         } else {
-            (-b - discriminant.sqrt()) / (2.0 * a)
+            Some((-half_b - discriminant.sqrt()) / a)
         }
     }
 }
