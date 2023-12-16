@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::vector::Vector;
 
 pub struct Ray {
@@ -11,9 +13,17 @@ impl Ray {
     }
 
     pub fn color(&self) -> Vector<3, f32> {
-        if let Some(sphere_intersection) = self.get_sphere_hit_distance(Vector([0.0, 0.0, -1.0]), 0.5) {
-            let normal = (self.at(sphere_intersection) - Vector([0.0, 0.0, -1.0])).normalize();
-            return Vector([normal.x() + 1.0, normal.y() + 1.0, normal.z() + 1.0]) * 0.5;
+        let sphere = Sphere {
+            origin: Vector([0.0, 0.0, -1.0]),
+            radius: 0.5,
+        };
+
+        if let Some(intersection) = sphere.get_intersection(self, 0.0..50.0) {
+            return Vector([
+                intersection.normal.x() + 1.0,
+                intersection.normal.y() + 1.0,
+                intersection.normal.z() + 1.0,
+            ]) * 0.5;
         }
 
         let unit_direction = self.direction.normalize();
@@ -21,21 +31,66 @@ impl Ray {
 
         Vector([1.0, 1.0, 1.0]) * (1.0 - a) + Vector([0.5, 0.7, 1.0]) * a
     }
+}
 
-    fn get_sphere_hit_distance(&self, center: Vector<3, f32>, radius: f32) -> Option<f32> {
-        let sphere_direction = self.start.clone() - center;
+struct Sphere {
+    origin: Vector<3, f32>,
+    radius: f32,
+}
+
+struct IntersectionInfo {
+    distance: f32,
+    point: Vector<3, f32>,
+    normal: Vector<3, f32>,
+    front_face: bool,
+}
+
+impl IntersectionInfo {
+    fn from_ray(ray: &Ray, distance: f32, normal: Vector<3, f32>) -> Self {
+        let front_face = ray.direction.dot(&normal) < 0.0;
+        let normal = if front_face { normal } else { -normal };
+
+        Self {
+            distance,
+            point: ray.at(distance),
+            normal,
+            front_face,
+        }
+    }
+}
+
+trait RaycastTarget {
+    fn get_intersection(&self, ray: &Ray, bounds: Range<f32>) -> Option<IntersectionInfo>;
+}
+
+impl RaycastTarget for Sphere {
+    fn get_intersection(&self, ray: &Ray, bounds: Range<f32>) -> Option<IntersectionInfo> {
+        let sphere_direction = ray.start.clone() - self.origin.clone();
 
         // solve using quadratic formula
-        let a = self.direction.len_squared();
-        let half_b = sphere_direction.dot(&self.direction);
-        let c = sphere_direction.len_squared() - radius * radius;
+        let a = ray.direction.len_squared();
+        let half_b = sphere_direction.dot(&ray.direction);
+        let c = sphere_direction.len_squared() - self.radius * self.radius;
 
         let discriminant = half_b * half_b - a * c;
 
         if discriminant < 0.0 {
-            None
-        } else {
-            Some((-half_b - discriminant.sqrt()) / a)
+            return None;
         }
+
+        let discriminant = discriminant.sqrt();
+
+        let mut distance = (-half_b - discriminant) / a;
+        if !bounds.contains(&distance) {
+            distance = (-half_b + discriminant) / a;
+            if !bounds.contains(&distance) {
+                return None;
+            }
+        }
+
+        // fast normal by dividing by radius instead of sqrt
+        let normal = (ray.at(distance) - self.origin.clone()) / self.radius;
+
+        Some(IntersectionInfo::from_ray(&ray, distance, normal))
     }
 }
