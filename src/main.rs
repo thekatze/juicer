@@ -12,7 +12,8 @@ use crate::{
 
 mod camera;
 mod image;
-mod ray;
+mod raycast;
+mod shape;
 mod vector;
 
 fn main() {

@@ -1,4 +1,4 @@
-use crate::{vector::Vector, ray::Ray};
+use crate::{vector::Vector, raycast::ray::Ray};
 
 pub struct Camera {
     origin: Vector<3, f32>,
