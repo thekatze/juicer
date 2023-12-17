@@ -1,3 +1,5 @@
+use indicatif::ParallelProgressIterator;
+use rayon::prelude::*;
 use std::ops::Range;
 
 use crate::{
@@ -28,7 +30,7 @@ impl Camera {
         }
     }
 
-    pub fn rays<'a>(&'a self) -> impl Iterator<Item = Ray> + 'a {
+    pub fn rays<'a>(&'a self) -> impl IndexedParallelIterator<Item = Ray> + 'a {
         // Calculate the vectors across the horizontal and down the vertical viewport edges.
         let viewport_u = Vector([self.viewport_size.x(), 0.0, 0.0]);
         let viewport_v = Vector([0.0, -self.viewport_size.y(), 0.0]);
@@ -44,26 +46,34 @@ impl Camera {
         let first_pixel_center =
             viewport_upper_left + pixel_delta_u.clone() / 2.0 + pixel_delta_v.clone() / 2.0;
 
-        (0..self.image_size.y()).flat_map(move |y| {
-            let pixel_delta_u = pixel_delta_u.clone();
-            let pixel_delta_v = pixel_delta_v.clone();
-            let first_pixel_center = first_pixel_center.clone();
-            (0..self.image_size.x()).map(move |x| Ray {
-                start: self.origin.clone(),
-                direction: (first_pixel_center.clone()
-                    + pixel_delta_u.clone() * x as f32
-                    + pixel_delta_v.clone() * y as f32)
-                    - self.origin.clone(),
+        (0..self.image_size.x() * self.image_size.y())
+            .into_par_iter()
+            .map(move |index| {
+                let pixel_delta_u = pixel_delta_u.clone();
+                let pixel_delta_v = pixel_delta_v.clone();
+                let first_pixel_center = first_pixel_center.clone();
+
+                let x = index % self.image_size.x();
+                let y = index / self.image_size.x();
+
+                Ray {
+                    start: self.origin.clone(),
+                    direction: (first_pixel_center.clone()
+                        + pixel_delta_u.clone() * x as f32
+                        + pixel_delta_v.clone() * y as f32)
+                        - self.origin.clone(),
+                }
             })
-        })
     }
 
     pub fn render(&self, world: &World) -> Image {
+        let len = self.image_size.x() * self.image_size.y();
+
         let pixels = self
             .rays()
-            .enumerate()
-            .map(|(_, ray)| ray.color(&world) * 255.9)
+            .map(|ray| ray.color(&world) * 255.9)
             .map(|color| Vector([color.x() as u8, color.y() as u8, color.z() as u8]))
+            .progress_count(len as u64)
             .collect::<Vec<_>>()
             .into_boxed_slice();
 
