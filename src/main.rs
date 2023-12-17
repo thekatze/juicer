@@ -1,44 +1,38 @@
 #![feature(maybe_uninit_array_assume_init)]
 #![feature(maybe_uninit_uninit_array)]
-#![feature(iter_collect_into)]
 
 use std::io::Write;
 
 use crate::{
-    camera::Camera,
-    image::{formats::ppm::PPM, Image},
+    camera::{Camera, World},
+    image::formats::ppm::PPM,
+    raycast::raycast_target::RaycastTarget,
     vector::Vector,
 };
 
 mod camera;
 mod image;
 mod raycast;
-mod shape;
 mod vector;
 
 fn main() {
-    let camera = Camera::new(Vector([0.0, 0.0, 0.0]), 1920, 16.0 / 9.0);
-    let pixel_count = camera.image_size.x() * camera.image_size.y();
-    let pixel_count_percentages = pixel_count / 100;
+    let camera = Camera::new(Vector([0.0, 0.0, 0.0]), 640, 16.0 / 9.0);
 
-    let pixels = camera
-        .rays()
-        .enumerate()
-        .inspect(|(index, _)| {
-            if (index + 1) % pixel_count_percentages == 0 {
-                println!("{}%", index / pixel_count_percentages);
-            }
-        })
-        .map(|(_, ray)| ray.color() * 255.9)
-        .map(|color| Vector([color.x() as u8, color.y() as u8, color.z() as u8]))
-        .collect::<Vec<_>>()
-        .into_boxed_slice();
-
-    let image = Image {
-        width: camera.image_size.x(),
-        height: camera.image_size.y(),
-        pixels,
+    let world = World {
+        targets: vec![
+            RaycastTarget::Sphere {
+                origin: Vector([0.0, 0.0, -1.0]),
+                radius: 0.5,
+            },
+            RaycastTarget::Sphere {
+                origin: Vector([0.0, -100.5, -1.0]),
+                radius: 100.0,
+            },
+        ]
+        .into_boxed_slice(),
     };
+
+    let image = camera.render(&world);
 
     let bytes = image.serialize_to_bytes::<PPM>();
 

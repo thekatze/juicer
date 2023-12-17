@@ -1,4 +1,10 @@
-use crate::{vector::Vector, raycast::ray::Ray};
+use std::ops::Range;
+
+use crate::{
+    image::Image,
+    raycast::{intersection_info::IntersectionInfo, ray::Ray, raycast_target::RaycastTarget},
+    vector::Vector,
+};
 
 pub struct Camera {
     origin: Vector<3, f32>,
@@ -51,5 +57,33 @@ impl Camera {
             })
         })
     }
+
+    pub fn render(&self, world: &World) -> Image {
+        let pixels = self
+            .rays()
+            .enumerate()
+            .map(|(_, ray)| ray.color(&world) * 255.9)
+            .map(|color| Vector([color.x() as u8, color.y() as u8, color.z() as u8]))
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
+
+        Image {
+            width: self.image_size.x(),
+            height: self.image_size.y(),
+            pixels,
+        }
+    }
 }
 
+pub struct World {
+    pub targets: Box<[RaycastTarget]>,
+}
+
+impl World {
+    pub fn get_intersection(&self, ray: &Ray, bounds: &Range<f32>) -> Option<IntersectionInfo> {
+        self.targets
+            .iter()
+            .filter_map(|target| target.get_intersection(ray, &bounds))
+            .min_by(|a, b| a.distance.total_cmp(&b.distance))
+    }
+}

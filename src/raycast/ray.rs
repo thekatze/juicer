@@ -1,6 +1,4 @@
-use crate::{vector::Vector, shape::sphere::Sphere};
-
-use super::raycast_target::RaycastTarget;
+use crate::{camera::World, vector::Vector};
 
 pub struct Ray {
     pub start: Vector<3, f32>,
@@ -12,13 +10,8 @@ impl Ray {
         self.start.clone() + self.direction.clone() * t
     }
 
-    pub fn color(&self) -> Vector<3, f32> {
-        let sphere = Sphere {
-            origin: Vector([0.0, 0.0, -1.0]),
-            radius: 0.5,
-        };
-
-        if let Some(intersection) = sphere.get_intersection(self, 0.0..50.0) {
+    pub fn color(&self, world: &World) -> Vector<3, f32> {
+        if let Some(intersection) = world.get_intersection(self, &(0.0..50.0)) {
             return Vector([
                 intersection.normal.x() + 1.0,
                 intersection.normal.y() + 1.0,
@@ -32,4 +25,3 @@ impl Ray {
         Vector([1.0, 1.0, 1.0]) * (1.0 - a) + Vector([0.5, 0.7, 1.0]) * a
     }
 }
-
