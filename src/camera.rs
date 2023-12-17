@@ -13,10 +13,18 @@ pub struct Camera {
     pub image_size: Vector<2, usize>,
     viewport_size: Vector<2, f32>,
     focal_length: f32,
+    bounds: Range<f32>,
+    samples: usize,
 }
 
 impl Camera {
-    pub fn new(origin: Vector<3, f32>, image_width: usize, aspect_ratio: f32) -> Camera {
+    pub fn new(
+        origin: Vector<3, f32>,
+        image_width: usize,
+        aspect_ratio: f32,
+        bounds: Range<f32>,
+        samples: usize,
+    ) -> Camera {
         let image_height = (image_width as f32 / aspect_ratio).max(1.0) as usize;
 
         let viewport_height = 2.0;
@@ -24,13 +32,17 @@ impl Camera {
 
         Camera {
             origin,
+            bounds,
+            samples,
             image_size: Vector([image_width, image_height]),
             viewport_size: Vector([viewport_width, viewport_height]),
             focal_length: 1.0,
         }
     }
 
-    pub fn rays<'a>(&'a self) -> impl IndexedParallelIterator<Item = Ray> + 'a {
+    pub fn rays<'a>(
+        &'a self,
+    ) -> impl IndexedParallelIterator<Item = impl Iterator<Item = Ray> + 'a> + 'a {
         // Calculate the vectors across the horizontal and down the vertical viewport edges.
         let viewport_u = Vector([self.viewport_size.x(), 0.0, 0.0]);
         let viewport_v = Vector([0.0, -self.viewport_size.y(), 0.0]);
@@ -56,13 +68,20 @@ impl Camera {
                 let x = index % self.image_size.x();
                 let y = index / self.image_size.x();
 
-                Ray {
-                    start: self.origin.clone(),
-                    direction: (first_pixel_center.clone()
-                        + pixel_delta_u.clone() * x as f32
-                        + pixel_delta_v.clone() * y as f32)
-                        - self.origin.clone(),
-                }
+                let mut rng = fastrand::Rng::new();
+
+                (0..self.samples).map(move |_| {
+                    let offset_x = rng.f32() - 0.5;
+                    let offset_y = rng.f32() - 0.5;
+
+                    Ray {
+                        start: self.origin.clone(),
+                        direction: (first_pixel_center.clone()
+                            + pixel_delta_u.clone() * (offset_x + x as f32)
+                            + pixel_delta_v.clone() * (offset_y + y as f32))
+                            - self.origin.clone(),
+                    }
+                })
             })
     }
 
@@ -71,8 +90,19 @@ impl Camera {
 
         let pixels = self
             .rays()
-            .map(|ray| ray.color(&world) * 255.9)
-            .map(|color| Vector([color.x() as u8, color.y() as u8, color.z() as u8]))
+            .map(|pixel_rays| {
+                pixel_rays
+                    .map(|ray| ray.color(&world, &self.bounds) * 255.9)
+                    .sum::<Vector<3, f32>>()
+                    / self.samples as f32
+            })
+            .map(|color| {
+                Vector([
+                    color.x().clamp(0.0, 255.0) as u8,
+                    color.y().clamp(0.0, 255.0) as u8,
+                    color.z().clamp(0.0, 255.0) as u8,
+                ])
+            })
             .progress_count(len as u64)
             .collect::<Vec<_>>()
             .into_boxed_slice();

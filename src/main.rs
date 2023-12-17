@@ -16,7 +16,13 @@ mod raycast;
 mod vector;
 
 fn main() {
-    let camera = Camera::new(Vector([0.0, 0.0, 0.0]), 1920, 16.0 / 9.0);
+    let camera = Camera::new(
+        Vector([0.0, 0.0, 0.0]),
+        1920,
+        16.0 / 9.0,
+        0.0..f32::INFINITY,
+        10,
+    );
 
     let world = World {
         targets: vec![

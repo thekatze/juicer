@@ -135,3 +135,12 @@ where
         self.0[2]
     }
 }
+
+impl<const SIZE: usize, T> core::iter::Sum for Vector<SIZE, T>
+where
+    T: std::ops::Add<Output = T> + Default + Copy,
+{
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Vector([T::default(); SIZE]), |acc, x| acc + x)
+    }
+}

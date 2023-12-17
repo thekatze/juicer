@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use crate::{camera::World, vector::Vector};
 
 pub struct Ray {
@@ -10,8 +12,8 @@ impl Ray {
         self.start.clone() + self.direction.clone() * t
     }
 
-    pub fn color(&self, world: &World) -> Vector<3, f32> {
-        if let Some(intersection) = world.get_intersection(self, &(0.0..50.0)) {
+    pub fn color(&self, world: &World, bounds: &Range<f32>) -> Vector<3, f32> {
+        if let Some(intersection) = world.get_intersection(self, bounds) {
             return Vector([
                 intersection.normal.x() + 1.0,
                 intersection.normal.y() + 1.0,
