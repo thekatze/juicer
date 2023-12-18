@@ -144,3 +144,29 @@ where
         iter.fold(Vector([T::default(); SIZE]), |acc, x| acc + x)
     }
 }
+
+impl<T> Vector<3, T>
+where
+    T: Copy + std::ops::Mul<Output = T> + std::ops::Sub<Output = T>,
+{
+    pub fn cross(&self, rhs: &Self) -> Self {
+        Vector([
+            self.y() * rhs.z() - self.z() * rhs.y(),
+            self.z() * rhs.x() - self.x() * rhs.z(),
+            self.x() * rhs.y() - self.y() * rhs.x(),
+        ])
+    }
+}
+
+impl Vector<3, f32> {
+    pub fn random_unit() -> Self {
+        let z = fastrand::f32() * 2.0 - 1.0;
+        let theta = fastrand::f32() * std::f32::consts::PI * 2.0;
+
+        Vector([
+            (1.0 - z * z).sqrt() * theta.cos(),
+            (1.0 - z * z).sqrt() * theta.sin(),
+            z,
+        ])
+    }
+}

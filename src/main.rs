@@ -21,7 +21,8 @@ fn main() {
         1920,
         16.0 / 9.0,
         0.0..f32::INFINITY,
-        10,
+        1,
+        50,
     );
 
     let world = World {

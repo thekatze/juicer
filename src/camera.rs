@@ -15,6 +15,7 @@ pub struct Camera {
     focal_length: f32,
     bounds: Range<f32>,
     samples: usize,
+    max_bounces: usize,
 }
 
 impl Camera {
@@ -24,6 +25,7 @@ impl Camera {
         aspect_ratio: f32,
         bounds: Range<f32>,
         samples: usize,
+        max_bounces: usize,
     ) -> Camera {
         let image_height = (image_width as f32 / aspect_ratio).max(1.0) as usize;
 
@@ -37,6 +39,7 @@ impl Camera {
             image_size: Vector([image_width, image_height]),
             viewport_size: Vector([viewport_width, viewport_height]),
             focal_length: 1.0,
+            max_bounces,
         }
     }
 
@@ -92,7 +95,7 @@ impl Camera {
             .rays()
             .map(|pixel_rays| {
                 pixel_rays
-                    .map(|ray| ray.color(&world, &self.bounds) * 255.9)
+                    .map(|ray| ray.color(&world, &self.bounds, self.max_bounces) * 255.9)
                     .sum::<Vector<3, f32>>()
                     / self.samples as f32
             })
