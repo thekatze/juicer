@@ -5,7 +5,7 @@ use std::io::Write;
 
 use crate::{
     camera::{Camera, World},
-    image::formats::ppm::PPM,
+    image::formats::ppm::Ppm,
     raycast::raycast_target::RaycastTarget,
     vector::Vector,
 };
@@ -41,7 +41,7 @@ fn main() {
 
     let image = camera.render(&world);
 
-    let bytes = image.serialize_to_bytes::<PPM>();
+    let bytes = image.serialize_to_bytes::<Ppm>();
 
     let mut writer = std::io::BufWriter::new(
         std::fs::File::create("test.ppm").expect("file could not be created"),

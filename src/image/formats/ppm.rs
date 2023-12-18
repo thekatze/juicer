@@ -1,7 +1,7 @@
 use crate::{image::formats::ImageFormat, vector::Vector};
 
-pub struct PPM;
-impl ImageFormat for PPM {
+pub struct Ppm;
+impl ImageFormat for Ppm {
     fn serialize_to_bytes(data: &[Vector<3, u8>], width: usize, height: usize) -> Box<[u8]> {
         let mut serialized = String::with_capacity(
             3 + // header P3

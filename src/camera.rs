@@ -43,9 +43,9 @@ impl Camera {
         }
     }
 
-    pub fn rays<'a>(
-        &'a self,
-    ) -> impl IndexedParallelIterator<Item = impl Iterator<Item = Ray> + 'a> + 'a {
+    pub fn rays(
+        &'_ self,
+    ) -> impl IndexedParallelIterator<Item = impl Iterator<Item = Ray> + '_> + '_ {
         // Calculate the vectors across the horizontal and down the vertical viewport edges.
         let viewport_u = Vector([self.viewport_size.x(), 0.0, 0.0]);
         let viewport_v = Vector([0.0, -self.viewport_size.y(), 0.0]);
@@ -95,7 +95,7 @@ impl Camera {
             .rays()
             .map(|pixel_rays| {
                 pixel_rays
-                    .map(|ray| ray.color(&world, &self.bounds, self.max_bounces) * 255.9)
+                    .map(|ray| ray.color(world, &self.bounds, self.max_bounces) * 255.9)
                     .sum::<Vector<3, f32>>()
                     / self.samples as f32
             })
@@ -126,7 +126,7 @@ impl World {
     pub fn get_intersection(&self, ray: &Ray, bounds: &Range<f32>) -> Option<IntersectionInfo> {
         self.targets
             .iter()
-            .filter_map(|target| target.get_intersection(ray, &bounds))
+            .filter_map(|target| target.get_intersection(ray, bounds))
             .min_by(|a, b| a.distance.total_cmp(&b.distance))
     }
 }

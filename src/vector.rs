@@ -14,8 +14,8 @@ macro_rules! impl_elementwise_arithmetic_op {
             fn $fn(self, rhs: Self) -> Self::Output {
                 let mut result = MaybeUninit::uninit_array::<SIZE>();
 
-                for i in 0..SIZE {
-                    result[i] = MaybeUninit::new($($bound)*::$fn(self.0[i], rhs.0[i]));
+                for (i, item) in result.iter_mut().enumerate() {
+                    *item = MaybeUninit::new($($bound)*::$fn(self.0[i], rhs.0[i]));
                 }
 
                 // SAFETY: we iterated over every index of the array
@@ -39,8 +39,8 @@ macro_rules! impl_scalar_arithmetic_op {
             fn $fn(self, scalar: T) -> Self::Output {
                 let mut result = MaybeUninit::uninit_array::<SIZE>();
 
-                for i in 0..SIZE {
-                    result[i] = MaybeUninit::new($($bound)*::$fn(self.0[i], scalar));
+                for (i, item) in result.iter_mut().enumerate() {
+                    *item = MaybeUninit::new($($bound)*::$fn(self.0[i], scalar));
                 }
 
                 // SAFETY: we iterated over every index of the array
@@ -62,8 +62,8 @@ where
     fn neg(self) -> Self::Output {
         let mut result = MaybeUninit::uninit_array::<SIZE>();
 
-        for i in 0..SIZE {
-            result[i] = MaybeUninit::new(std::ops::Neg::neg(self.0[i]));
+        for (i, item) in result.iter_mut().enumerate() {
+            *item = MaybeUninit::new(std::ops::Neg::neg(self.0[i]));
         }
 
         // SAFETY: we iterated over every index of the array
@@ -100,8 +100,8 @@ where
     pub fn normalize(&self) -> Vector<SIZE, f32> {
         let len = self.len();
         let mut result = MaybeUninit::uninit_array::<SIZE>();
-        for i in 0..SIZE {
-            result[i] = MaybeUninit::new(self.0[i].into() / len);
+        for (i, item) in result.iter_mut().enumerate() {
+            *item = MaybeUninit::new(self.0[i].into() / len);
         }
         // SAFETY: we iterated over every index of the array
         Vector(unsafe { MaybeUninit::array_assume_init(result) })

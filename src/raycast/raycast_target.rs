@@ -39,7 +39,7 @@ impl RaycastTarget {
                 // fast normal by dividing by radius instead of sqrt
                 let normal = (ray.at(distance) - origin.clone()) / *radius;
 
-                Some(IntersectionInfo::from_ray(&ray, distance, normal))
+                Some(IntersectionInfo::from_ray(ray, distance, normal))
             }
         }
     }
